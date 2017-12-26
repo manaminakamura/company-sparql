@@ -26,26 +26,41 @@ module Dbpedia
     results = client.query(query_string)
   end
 
-  def ping
+  def associated_person(client=nil, limit=10, name)
     client ||= get_client
     query_string = "
-      SELECT ?s ?p ?o
-      WHERE {
-      ?s ?p ?o .
-      }
-      LIMIT 100
+    #{PREFIXES}
+    SELECT DISTINCT ?name
+    WHERE {
+      ?person rdf:type dbp-owl:Person .
+      ?person dbp-owl:wikiPageWikiLink dbp:#{name} .
+      ?person rdfs:label ?name .
+    }
+    LIMIT #{limit}
     "
-    results = client.query(query_string)
+    begin
+      results = client.query(query_string)
+    rescue => e
+      return []
+    end
   end
+
 end
 
 if $0 == __FILE__
   include Dbpedia
-  res = tse_companies
+  client = get_client
+  res = tse_companies(client)
   res.each do |item|
-    p item.to_h[:name].to_s
+    name = item.to_h[:name].to_s
+    p name
     p item.to_h[:abstract].to_s
     p item.to_h[:number_of_employees].to_s
+    res = associated_person(client, 10, name)
+    association = res.map do |person|
+      person.to_h[:name].to_s
+    end
+    p association
   end
 end
 
