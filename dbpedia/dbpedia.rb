@@ -31,28 +31,26 @@ module Dbpedia
     client ||= get_client
     query_string = "
       #{PREFIXES}
-      SELECT DISTINCT ?name
+      SELECT DISTINCT ?name ?univ_name
       WHERE {
-        ?person dbp:#{key_person}
-        ?person rdfs:label ?name .
+        <#{key_person.force_encoding("ASCII-8BIT")}> rdfs:label ?name .
+        <#{key_person.force_encoding("ASCII-8BIT")}> dbp-owl:wikiPageWikiLink ?univ.
+        ?univ rdf:type dbp-owl:University .
+        ?univ rdfs:label ?univ_name .
       }
     "
-    begin
-      results = client.query(query_string)
-    rescue => e
-      return []
-    end
+    results = client.query(query_string)
   end
 
-  def associated_person(client=nil, limit=10, name)
+  def associate_company(client=nil, limit=10, name)
     client ||= get_client
     query_string = "
     #{PREFIXES}
     SELECT DISTINCT ?name
     WHERE {
-      ?person rdf:type dbp-owl:Person .
-      ?person dbp-owl:wikiPageWikiLink dbp:#{name} .
-      ?person rdfs:label ?name .
+      ?company rdf:type dbp-owl:Company .
+      ?company dbp-owl:wikiPageWikiLink dbp:#{name} .
+      ?company rdfs:label ?name .
     }
     LIMIT #{limit}
     "
@@ -65,10 +63,10 @@ module Dbpedia
 
 end
 
-if $0 == __FILE__
+if __FILE__ == $0
   include Dbpedia
   client = get_client
-  res = tse_companies(client)
+  res = tse_companies(client, 10)
   res.each do |item|
     name = item.to_h[:name].to_s
     p name
@@ -78,12 +76,12 @@ if $0 == __FILE__
     key_person = item.to_h[:key_person].to_s
     unless key_person == "http://ja.dbpedia.org/resource/代表取締役"
       res = key_person_info(client, key_person)
-      p res[0].to_h[:name].to_s
+      p res[0].to_h[:name].to_s + ", " + res[0].to_h[:univ_name].to_s
     end
 
-    res = associated_person(client, 10, name)
-    association = res.map do |person|
-      person.to_h[:name].to_s
+    res = associate_company(client, 10, name)
+    association = res.map do |company|
+      company.to_h[:name].to_s
     end
     p association
   end
