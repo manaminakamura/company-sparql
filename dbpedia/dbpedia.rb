@@ -14,16 +14,17 @@ module Dbpedia
     client ||= get_client
     query_string = "
       #{PREFIXES}
-      SELECT DISTINCT ?name ?abstract ?number_of_employees ?key_person
+      SELECT DISTINCT ?name ?abstract (MIN(?num) AS ?number_of_employees) (MIN(?kp) AS ?key_person)
       WHERE {
         ?company dbp-owl:wikiPageWikiLink <http://ja.dbpedia.org/resource/Category:東証一部上場企業> .
         ?company rdfs:label ?name .
         ?company dbp-owl:abstract ?abstract .
-        ?company dbp-owl:numberOfEmployees ?number_of_employees .
-        ?company dbp-owl:keyPerson ?key_person .
+        ?company dbp-owl:numberOfEmployees ?num .
+        ?company dbp-owl:keyPerson ?kp .
       }
+      GROUP BY ?company ?abstract ?name
       LIMIT #{limit}
-    "
+    ".force_encoding("ASCII-8BIT")
     results = client.query(query_string)
   end
 
@@ -66,7 +67,7 @@ end
 if __FILE__ == $0
   include Dbpedia
   client = get_client
-  res = tse_companies(client, 10)
+  res = tse_companies(client, 30)
   res.each do |item|
     name = item.to_h[:name].to_s
     p name
@@ -84,6 +85,7 @@ if __FILE__ == $0
       company.to_h[:name].to_s
     end
     p association
+    p "----------"
   end
 end
 
