@@ -14,13 +14,15 @@ module Dbpedia
     client ||= get_client
     query_string = "
       #{PREFIXES}
-      SELECT DISTINCT ?name ?abstract (MIN(?num) AS ?number_of_employees) (MIN(?kp) AS ?key_person)
+      SELECT DISTINCT ?name ?abstract (MIN(?num) AS ?number_of_employees) (MIN(?rep) AS ?representative)
+
       WHERE {
         ?company dbp-owl:wikiPageWikiLink <http://ja.dbpedia.org/resource/Category:東証一部上場企業> .
         ?company rdfs:label ?name .
         ?company dbp-owl:abstract ?abstract .
         ?company dbp-owl:numberOfEmployees ?num .
-        ?company dbp-owl:keyPerson ?kp .
+        ?company prop-ja:代表者 ?rep .
+        ?rep rdf:type dbp-owl:Person .
       }
       GROUP BY ?company ?abstract ?name
       LIMIT #{limit}
@@ -73,10 +75,10 @@ if __FILE__ == $0
     p name
     p item.to_h[:abstract].to_s
     p item.to_h[:number_of_employees].to_s
-
-    key_person = item.to_h[:key_person].to_s
-    unless key_person == "http://ja.dbpedia.org/resource/代表取締役"
-      res = key_person_info(client, key_person)
+    
+    representative = item.to_h[:representative].to_s
+    unless representative == "http://ja.dbpedia.org/resource/代表取締役" || representative == "http://ja.dbpedia.org/resource/取締役"
+      res = key_person_info(client, representative)
       p res[0].to_h[:name].to_s + ", " + res[0].to_h[:univ_name].to_s
     end
 
