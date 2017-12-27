@@ -34,12 +34,12 @@ module Dbpedia
       #{PREFIXES}
       SELECT DISTINCT ?name ?univ_name
       WHERE {
-        <#{key_person.force_encoding("ASCII-8BIT")}> rdfs:label ?name .
-        <#{key_person.force_encoding("ASCII-8BIT")}> dbp-owl:wikiPageWikiLink ?univ.
+        <#{key_person}> rdfs:label ?name .
+        <#{key_person}> dbp-owl:wikiPageWikiLink ?univ.
         ?univ rdf:type dbp-owl:University .
         ?univ rdfs:label ?univ_name .
       }
-    "
+    ".force_encoding("ASCII-8BIT")
     results = client.query(query_string)
   end
 
